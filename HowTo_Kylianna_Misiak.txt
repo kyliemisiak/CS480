@@ -1,0 +1,16 @@
+
+
+How to run the calculator.c program:
+This program was built on a linux operating system using nano and the command line.
+
+To run the program start by downloading the calculator.c program.
+
+Use the command line to navigate to the directory that the calculator.c is in.
+
+Once in the directory, type "gcc -o calculator calculator.c -lm". This will compile the program and link the math library.
+
+Then type ./calculator to run the program.
+
+You should now be able to enter your expressions in the program.
+
+Simply type ./calculator in the command line to run again. 
