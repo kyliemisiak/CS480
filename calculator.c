@@ -75,7 +75,13 @@ char pop(char *stack, int *top){
 	return stack[(*top)--];
 }
 
+void pushDbl(double *stack, int *top, double val){
+	stack[++(*top)] = val;
+}
 
+double popDbl(double *stack, int *top){
+	return stack[(*top)--];
+}
 
 /* Mathematic expression evaluation implemented in code, do not use eval
  or internal eval functions
@@ -87,14 +93,14 @@ void infixToRPN(char *expr, char*rpn){
 	int opTop = -1;
 	int rpnIndex = 0;
 	int i = 0;
-	
+
 	/*while index i does not equal null,
         while loop traverses through each char in expression*/
 	while(expr[i] != '\0'){
 		//if index i is a digit or a decimal
 		if(isdigit(expr[i]) || expr[i] == '.'){
 			//use while loop to traverse from start to end of number
-			while(isdigit(expr[i]) || expr[i] =='.'){
+			while(isdigit(expr[i]) || expr[i] == '.'){
 				rpn[rpnIndex++] = expr[i++];
 			}
 			//while loop ends, means end of number
@@ -107,10 +113,10 @@ void infixToRPN(char *expr, char*rpn){
 			//i++, go to next char
 			i++;
 		}
-		//if char == closing parenthesis , 
+		//if char == closing parenthesis ,
 		else if(expr[i] == ')'){
 			while(opTop >= 0 && opStack[opTop] != '('){
-				rpn[rpnIndex++] = opStack[opTop--];
+				rpn[rpnIndex++] = pop(opStack, &opTop);
 				rpn[rpnIndex++] = ' ';
 			}
 			pop(opStack, &opTop);
@@ -118,7 +124,7 @@ void infixToRPN(char *expr, char*rpn){
 		}
 		else if(isOperator(expr[i])){
 			while(opTop >= 0 && precedence(opStack[opTop]) >= precedence(expr[i])){
-				rpn[rpnIndex++] = opStack[opTop--];
+				rpn[rpnIndex++] = pop(opStack, &opTop);
 				rpn[rpnIndex++] = ' ';
 			}
 			push(opStack, &opTop, expr[i]);
@@ -133,7 +139,7 @@ void infixToRPN(char *expr, char*rpn){
 				func[j++] = expr[i++];
 			}
 			func[j] = '\0';
-			
+
 			if(isFunction(func)){
 				//marker 'f' for function
 				rpn[rpnIndex++] = 'f';
@@ -153,22 +159,107 @@ void infixToRPN(char *expr, char*rpn){
 		rpn[rpnIndex++] = pop(opStack, &opTop);
 		rpn[rpnIndex++] = ' ';
 	}
-	
-	//set rpn expression to null 
+
+	//set rpn expression to null
 	rpn[rpnIndex] = '\0';
 }
 
 
+//evalRPN - rpn evaluation function
+double evalRPN(char *rpn){
+	//create stack
+	double stack[MAX];
+	int top = -1;
+	int i = 0;
+
+	//while loop, while index in rpn array is not null
+	while(rpn[i] != '\0'){
+		//if index 'i' in rpn array is a digit or a decimal
+		if(isdigit(rpn[i]) || rpn[i] == '.'){
+			//double num = 0
+			double num = 0.0;
+			//int decimal flag
+			int decFlag = 0;
+			//dbl decimal div
+			double decDiv = 1;
+
+			//while 'i' is a digit, or a decima, and no dec flag
+			while(isdigit(rpn[i]) || (rpn[i] == '.' && !decFlag)){
+				//if i is a decimal, then decimal flag is set
+				if(rpn[i] == '.'){
+					decFlag = 1;
+				}else{
+					//build decimal number by multiplication
+					num = num * 10 + (rpn[i] - '0');
+					if(decFlag){
+						//keep track of how many digits are after decimal point
+						decDiv *= 10;
+					}
+				}
+				i++;
+			}
+			//adjust decimal point by dividing number of dec places
+			num /= decDiv;
+			//push number onto stack
+			pushDbl(stack, &top, num);
+		}
+		//if current char is an operator
+		else if(isOperator(rpn[i])){
+			//pop  first and sec operand to perform operation
+			double second = popDbl(stack, &top);
+			double first = popDbl(stack, &top);
+			//apply operator
+			double result = useOperator(rpn[i], first, second);
+			//push result of operation to stack
+			pushDbl(stack, &top, result);
+			//move to next char in array
+			i++;
+		}
+		//if char equals 'f' (function marker) then there is afunction next
+		else if(rpn[i] == 'f'){
+			//increment to next char (function)
+			i++;
+			//function array name
+			char func[10];
+			int j = 0;
+			//while loop to get func name
+			while(isalpha(rpn[i])){
+				func[j++] = rpn[i++];
+			}
+			//set function array to null
+			func[j] = '\0';
+			//pop number for func from stack
+			double op = popDbl(stack, &top);
+			//function result
+			double result = useFunction(func, op);
+			//push result to stack
+			pushDbl(stack, &top, result);
+		}
+		else{
+			//if char is not digit, operator, or func then go to next char
+			i++;
+		}
+	}
+	//return final result
+	return popDbl(stack, &top);
+}
 
 //main function
 int main(){
 	char expr[MAX];
    	char rpn[MAX];
-    
+ 
    	 // Test Case 1
     	strcpy(expr, "3 + 4");
     	infixToRPN(expr, rpn);
     	printf("Infix: %s\nPostfix: %s\n\n", expr, rpn);
+
+	//Test input without spaces
+	strcpy(expr, "3+4*2");
+	infixToRPN(expr, rpn);
+	printf("Infix: %s\nPostfix: %s\n\n", expr, rpn);
+	printf("input without spaces ^^");
+
    	 // Test Case 2
    	strcpy(expr, "3 * 4");
         infixToRPN(expr, rpn);
@@ -191,15 +282,22 @@ int main(){
 strcpy(expr, "sin(30 + 2)");
 	printf("Postfix after function: %s\n", rpn);
     infixToRPN(expr, rpn);
-    printf("Infix: %s\nPostfix: %s\n\n", expr, rpn); 
-  
+    printf("Infix: %s\nPostfix: %s\n\n", expr, rpn);
+
     // Test Case 7
     strcpy(expr, "((3 + 4) * 2) + 5");
     infixToRPN(expr, rpn);
-    printf("Infix: %s\nPostfix: %s\n\n", expr, rpn);	
-	//printf("Enter an expression: ");
-	//fgets(expr, MAX, stdin);
-	//expr[strcspn(expr, "\n")] = '\0';
+    printf("Infix: %s\nPostfix: %s\n\n", expr, rpn);
+
+
+	printf("Enter an expression: ");
+	fgets(expr, MAX, stdin);
+	expr[strcspn(expr, "\n")] = '\0';
+
+	infixToRPN(expr, rpn);
+	double result = evalRPN(rpn);
+
+	printf("Result: %lf\n", result);
 
 
 
