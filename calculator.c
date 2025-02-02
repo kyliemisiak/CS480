@@ -277,14 +277,17 @@ double evalRPN(char *rpn){
 	return popDbl(stack, &top);
 }
 
+//checking valid character inputs
 int isValidChar(char c){
 	return(isdigit(c) || isalpha(c) || isOperator(c) || c == '.' || c == '(' || c == ')');
 }
 
+//checking if valid expression
 void validateExpr(char *expr){
+	//keeping track of parenthesis balance
+	int balance = 0;
 
-	int balance;
-
+	//loop through expression input
 	for(int i = 0; expr[i] != '\0'; i++) {
         	if (!isValidChar(expr[i])) {
             		printf("Error: Invalid character '%c' in expression.\n", expr[i]);
@@ -312,20 +315,27 @@ void validateExpr(char *expr){
 int main(){
 	char expr[MAX];
    	char rpn[MAX];
+	
+	while(1){
 
-	printf("Enter an expression: ");
-	fgets(expr, MAX, stdin);
-	expr[strcspn(expr, "\n")] = '\0';
+		printf("Enter an expression (or type 'exit' to quit): ");
+		fgets(expr, MAX, stdin);
+		expr[strcspn(expr, "\n")] = '\0';
+		
+		if(strcmp(expr, "exit") == 0){
+			//exit while loop
+			break;
+		}
 
-	validateExpr(expr);
+		validateExpr(expr);
 
-	infixToRPN(expr, rpn);
-	double result = evalRPN(rpn);
+		infixToRPN(expr, rpn);
+		double result = evalRPN(rpn);
 
-	printf("Result: %lf\n", result);
+		printf("Result: %lf\n", result);
+	}
 
-
-
+	printf("Program ended.\n");
 	return 0;
 }
 
