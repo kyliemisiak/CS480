@@ -11,13 +11,9 @@ logarithmic operations w/ real numbers and "()" and "{}"
 #include <math.h>
 //for strcmp in useFunction
 #include <string.h>
-
 //for isalpha in infixToRPN
 #include <ctype.h>
-
 #define MAX 100
-
-// "-" used as unary and binary operator
 
 // Software should check for correct inputs
 
@@ -75,6 +71,7 @@ char pop(char *stack, int *top){
 	return stack[(*top)--];
 }
 
+// pushing and poppinga double functions
 void pushDbl(double *stack, int *top, double val){
 	stack[++(*top)] = val;
 }
@@ -86,13 +83,15 @@ double popDbl(double *stack, int *top){
 /* Mathematic expression evaluation implemented in code, do not use eval
  or internal eval functions
 */
-
 //using the shunting yard algorithm (converting infix expression to RPN)
 void infixToRPN(char *expr, char*rpn){
 	char opStack[MAX];
 	int opTop = -1;
 	int rpnIndex = 0;
 	int i = 0;
+
+	//flag to track prev char (if operator or left parenthesis)
+	int prevOperatorFlag = 1;
 
 	/*while index i does not equal null,
         while loop traverses through each char in expression*/
@@ -106,12 +105,16 @@ void infixToRPN(char *expr, char*rpn){
 			//while loop ends, means end of number
 			//add spaces between each number
 			rpn[rpnIndex++] = ' ';
+			//previous char was not operator or left paren - set flag to 0
+			prevOperatorFlag = 0;
 		}
 		//if char == open parenthesis then push to opStack to override precedence
 		else if(expr[i] == '('){
 			push(opStack, &opTop, '(');
 			//i++, go to next char
 			i++;
+			//prev char was left paren
+			prevOperatorFlag = 1;
 		}
 		//if char == closing parenthesis ,
 		else if(expr[i] == ')'){
@@ -121,15 +124,28 @@ void infixToRPN(char *expr, char*rpn){
 			}
 			pop(opStack, &opTop);
 			i++;
+			//set op flag back to zero
+			prevOperatorFlag = 0;
 		}
 		else if(isOperator(expr[i])){
-			while(opTop >= 0 && precedence(opStack[opTop]) >= precedence(expr[i])){
-				rpn[rpnIndex++] = pop(opStack, &opTop);
+			//used to check between unary and binary
+			if(expr[i] == '-' && (prevOperatorFlag || expr[i+1] == '-' || expr[i+1] == '+')){
+				rpn[rpnIndex++] = 'n';
 				rpn[rpnIndex++] = ' ';
+				i++;
+			}else{
+				// reg binary operators
+				while(opTop >= 0 && precedence(opStack[opTop]) >= precedence(expr[i])){
+					rpn[rpnIndex++] = pop(opStack, &opTop);
+					rpn[rpnIndex++] = ' ';
+				}
+				push(opStack, &opTop, expr[i]);
+				i++;
 			}
-			push(opStack, &opTop, expr[i]);
-			i++;
+			//prev char was an operator
+			prevOperatorFlag = 1;
 		}
+
 		//checks if char at i is a letter
 		//if char is a letter then apply function
 		else if(isalpha(expr[i])){
@@ -150,6 +166,7 @@ void infixToRPN(char *expr, char*rpn){
 				}
 				rpn[rpnIndex++] = ' ';
 			}
+			prevOperatorFlag = 0;
 		}
 		else{
 			i++;
@@ -215,17 +232,30 @@ double evalRPN(char *rpn){
 			//move to next char in array
 			i++;
 		}
+
+		//if array has unary marker set
+		else if(rpn[i] == 'n'){
+			//negate top of stack for unary negation
+			double num = popDbl(stack, &top);
+			//apply negation
+			pushDbl(stack, &top, -num);
+			i++;
+		}
+
 		//if char equals 'f' (function marker) then there is afunction next
 		else if(rpn[i] == 'f'){
+
 			//increment to next char (function)
 			i++;
 			//function array name
 			char func[10];
 			int j = 0;
+
 			//while loop to get func name
 			while(isalpha(rpn[i])){
 				func[j++] = rpn[i++];
 			}
+
 			//set function array to null
 			func[j] = '\0';
 			//pop number for func from stack
@@ -248,47 +278,6 @@ double evalRPN(char *rpn){
 int main(){
 	char expr[MAX];
    	char rpn[MAX];
- 
-   	 // Test Case 1
-    	strcpy(expr, "3 + 4");
-    	infixToRPN(expr, rpn);
-    	printf("Infix: %s\nPostfix: %s\n\n", expr, rpn);
-
-	//Test input without spaces
-	strcpy(expr, "3+4*2");
-	infixToRPN(expr, rpn);
-	printf("Infix: %s\nPostfix: %s\n\n", expr, rpn);
-	printf("input without spaces ^^");
-
-   	 // Test Case 2
-   	strcpy(expr, "3 * 4");
-        infixToRPN(expr, rpn);
-	printf("Infix: %s\nPostfix: %s\n\n", expr, rpn);
-
-	// Test Case 3
-    strcpy(expr, "(3 + 4) * 2");
-    infixToRPN(expr, rpn);
-    printf("Infix: %s\nPostfix: %s\n\n", expr, rpn); 
-    // Test Case 4:
-    strcpy(expr, "3 + 4 * 2");
-    infixToRPN(expr, rpn);
-    printf("Infix: %s\nPostfix: %s\n\n", expr, rpn);
-    // Test Case 5
-    strcpy(expr, "(3 + 4) * (5 - 2)");
-    infixToRPN(expr, rpn);
-    printf("Infix: %s\nPostfix: %s\n\n", expr, rpn); 
-    // Test Case 6 
-	printf("Postfix after function: %s\n", rpn);    
-strcpy(expr, "sin(30 + 2)");
-	printf("Postfix after function: %s\n", rpn);
-    infixToRPN(expr, rpn);
-    printf("Infix: %s\nPostfix: %s\n\n", expr, rpn);
-
-    // Test Case 7
-    strcpy(expr, "((3 + 4) * 2) + 5");
-    infixToRPN(expr, rpn);
-    printf("Infix: %s\nPostfix: %s\n\n", expr, rpn);
-
 
 	printf("Enter an expression: ");
 	fgets(expr, MAX, stdin);
@@ -303,3 +292,6 @@ strcpy(expr, "sin(30 + 2)");
 
 	return 0;
 }
+
+
+
