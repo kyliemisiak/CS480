@@ -13,6 +13,9 @@ logarithmic operations w/ real numbers and "()" and "{}"
 #include <string.h>
 //for isalpha in infixToRPN
 #include <ctype.h>
+
+//for error exit code
+#include <stdlib.h>
 #define MAX 100
 
 // Software should check for correct inputs
@@ -274,6 +277,37 @@ double evalRPN(char *rpn){
 	return popDbl(stack, &top);
 }
 
+int isValidChar(char c){
+	return(isdigit(c) || isalpha(c) || isOperator(c) || c == '.' || c == '(' || c == ')');
+}
+
+void validateExpr(char *expr){
+
+	int balance;
+
+	for(int i = 0; expr[i] != '\0'; i++) {
+        	if (!isValidChar(expr[i])) {
+            		printf("Error: Invalid character '%c' in expression.\n", expr[i]);
+            		//exit if error with input
+			exit(1);
+        	}
+		if(expr[i] == '('){
+			balance++;
+		}
+		else if(expr[i] == ')'){
+			balance--;
+			if(balance < 0){
+				printf("Error: Unmatched closing parenthesis.\n");
+				exit(1);
+			}
+		}
+    	}
+	if(balance != 0){
+		printf("Error: Mismatched parenthesis");
+		exit(1);
+	}
+}
+
 //main function
 int main(){
 	char expr[MAX];
@@ -282,6 +316,8 @@ int main(){
 	printf("Enter an expression: ");
 	fgets(expr, MAX, stdin);
 	expr[strcspn(expr, "\n")] = '\0';
+
+	validateExpr(expr);
 
 	infixToRPN(expr, rpn);
 	double result = evalRPN(rpn);
